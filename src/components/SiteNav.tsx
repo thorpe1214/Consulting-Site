@@ -1,11 +1,11 @@
 // components/SiteNav.tsx
-import { theme } from "@/config/theme";
+import Logo from "@/components/Logo";
 
 export default function SiteNav() {
   return (
     <nav className="sticky top-0 z-50 bg-neutral-50/80 backdrop-blur border-b border-neutral-200">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <a href="#" className="font-semibold">{theme.siteName}</a>
+        <a href="#" aria-label="Home"><Logo /></a>
         <div className="flex items-center gap-4 text-sm">
           <a href="#services" className="hover:underline">Services</a>
           <a href="#about" className="hover:underline">About</a>
@@ -15,4 +15,3 @@ export default function SiteNav() {
     </nav>
   );
 }
-
