@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, devMode: "devMode" in res ? (res as any).devMode : false });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[CONTACT API ERROR]", err);
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
   }

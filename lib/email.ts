@@ -52,24 +52,33 @@ export async function sendContactEmail(payload: ContactPayload) {
   }
 
   // Attempt to send via Resend
-  const result = await resend!.emails.send({
-    from: fromEmail!,
-    to: toEmail!,
-    subject,
-    html,
-  });
-
-  if ((result as any).error) {
-    console.error("[CONTACT EMAIL ERROR]", (result as any).error);
+  try {
+    const result = await resend!.emails.send({
+      from: fromEmail!,
+      to: toEmail!,
+      subject,
+      html,
+    });
+    // Resend SDK returns a typed object, but we guard anyway:
+    if ((result as { error?: unknown }).error) {
+      console.error("[CONTACT EMAIL ERROR]", (result as { error?: unknown }).error);
+      return { ok: false, error: "email_error" as const };
+    }
+    return { ok: true };
+  } catch (err: unknown) {
+    console.error("[CONTACT EMAIL ERROR]", err);
     return { ok: false, error: "email_error" as const };
   }
-  return { ok: true };
 }
 
 // Very small sanitizer
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (m) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m] as string)
-  );
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return s.replace(/[&<>"']/g, (m: string) => map[m] ?? m);
 }
-

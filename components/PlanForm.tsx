@@ -2,25 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { services as allServices } from "../lib/services";
-
-type Group = {
-  category: (typeof allServices)[number]["category"];
-  items: typeof allServices;
-};
+import type { Service } from "@/lib/services";
 
 function groupServices() {
-  const by: Record<string, any[]> = {};
+  const map = new Map<Service["category"], Service[]>();
   for (const s of allServices) {
-    by[s.category] ||= [];
-    by[s.category].push(s);
+    const arr = map.get(s.category) ?? [];
+    arr.push(s);
+    map.set(s.category, arr);
   }
-  return Object.entries(by).map(([category, items]) => ({ category, items })) as Group[];
+  return Array.from(map, ([category, items]) => ({ category, items }));
 }
 
 const CALENDLY = process.env.NEXT_PUBLIC_CALENDLY_URL;
 
 export default function PlanForm() {
-  const groups = useMemo(groupServices, []);
+  const groups = useMemo(
+    () => groupServices() as { category: Service["category"]; items: Service[] }[],
+    []
+  );
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,7 +65,7 @@ export default function PlanForm() {
         setMessage("");
         setSelected([]);
       }
-    } catch (err: any) {
+    } catch {
       setDone("error");
       setError("network");
     } finally {
