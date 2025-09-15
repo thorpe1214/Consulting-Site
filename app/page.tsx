@@ -1,5 +1,6 @@
 // app/page.tsx
 import { services } from "../lib/services";
+import PlanForm from "../components/PlanForm";
 
 const categories = [
   "Revenue & Pricing",
@@ -65,18 +66,13 @@ export default function Page() {
         })}
       </section>
 
-      {/* Contact (placeholder) */}
+      {/* Contact */}
       <section id="contact" className="max-w-3xl mx-auto px-6 pb-24">
         <h2 className="text-2xl font-semibold">Contact</h2>
         <p className="mt-3 text-neutral-700">
-          Tell me what you need and I’ll send a modular proposal.
+          Pick the modules you want and I’ll send a modular proposal.
         </p>
-        <p className="mt-1 text-sm text-neutral-600">
-          (Simple form + Calendly will go here in the next batch.)
-        </p>
-        <a href="mailto:you@example.com" className="inline-block mt-4 underline">
-          you@example.com
-        </a>
+        <PlanForm />
       </section>
     </main>
   );
