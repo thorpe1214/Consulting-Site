@@ -1,10 +1,14 @@
+// components/PlanForm.tsx
+// Client-side "Build your plan" form. Groups services by category, collects info,
+// adds honeypot + time-to-submit spam protection, and calls /api/contact.
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { services as allServices } from "../lib/services";
-import type { Service } from "@/lib/services";
+import { services as allServices, type Service } from "@/lib/services";
 
-function groupServices() {
+// Group once (fast) and memoize to avoid recomputing every render
+function groupServices(): { category: Service["category"]; items: Service[] }[] {
   const map = new Map<Service["category"], Service[]>();
   for (const s of allServices) {
     const arr = map.get(s.category) ?? [];
@@ -17,10 +21,7 @@ function groupServices() {
 const CALENDLY = process.env.NEXT_PUBLIC_CALENDLY_URL;
 
 export default function PlanForm() {
-  const groups = useMemo(
-    () => groupServices() as { category: Service["category"]; items: Service[] }[],
-    []
-  );
+  const groups = useMemo(groupServices, []);
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,20 +30,17 @@ export default function PlanForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<"ok" | "error" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Spam guards (client-side): timestamp + honeypot
-  const [renderedAt, setRenderedAt] = useState<number>(0);
-  const [hp, setHp] = useState<string>(""); // honeypot: stays empty for humans
 
-  // On mount, record when the form became interactive.
+  // Spam guards
+  const [renderedAt, setRenderedAt] = useState<number>(0); // when form became interactive
+  const [hp, setHp] = useState<string>(""); // honeypot field, should stay empty
+
   useEffect(() => {
     setRenderedAt(Date.now());
   }, []);
 
-  const toggle = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
+  const toggle = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +48,6 @@ export default function PlanForm() {
     setDone(null);
     setError(null);
     try {
-      // Compute elapsed time to detect too-fast submits (likely bots)
       const elapsedMs = Date.now() - renderedAt;
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -61,24 +58,24 @@ export default function PlanForm() {
           company,
           message,
           selectedServiceIds: selected,
-          // Spam guard payload
+          // spam-guard fields
           hp,
           elapsedMs,
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
+      const data: unknown = await res.json();
+      const ok = typeof data === "object" && data !== null && (data as { ok?: unknown }).ok === true;
+      if (!res.ok || !ok) {
+        const error =
+          typeof data === "object" && data !== null && typeof (data as { error?: unknown }).error === "string"
+            ? ((data as { error: string }).error)
+            : "unknown";
         setDone("error");
-        setError(data?.error || "unknown");
+        setError(error);
       } else {
         setDone("ok");
-        setName("");
-        setEmail("");
-        setCompany("");
-        setMessage("");
-        setSelected([]);
-        setHp("");
-        setRenderedAt(Date.now()); // reset guards post-success
+        setName(""); setEmail(""); setCompany(""); setMessage(""); setSelected([]);
+        setHp(""); setRenderedAt(Date.now());
       }
     } catch {
       setDone("error");
@@ -89,22 +86,16 @@ export default function PlanForm() {
   };
 
   return (
-    // action points to API for progressive enhancement; JS intercepts via onSubmit
-    <form
-      onSubmit={onSubmit}
-      action="/api/contact"
-      method="post"
-      className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
-    >
+    <form onSubmit={onSubmit} className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
       <h3 className="text-lg font-semibold">Build your plan</h3>
       <p className="mt-1 text-sm text-neutral-600">
-        Pick the modules you want. I’ll review and reply with a modular proposal.
+        Pick the modules you want. I’ll reply with a modular proposal.
       </p>
 
-      {/* ---- Honeypot field (hidden to humans, visible to many bots) ---- */}
+      {/* Honeypot: visually present but hidden from typical users; many bots will fill it */}
       <div className="hidden" aria-hidden="true">
         <label>
-          Company website {/* decoy label to entice basic scrapers */}
+          Company website
           <input
             type="text"
             name="website"
@@ -114,25 +105,25 @@ export default function PlanForm() {
             onChange={(e) => setHp(e.target.value)}
           />
         </label>
-        {/* Include elapsedMs for no-JS form posts */}
-        <input type="hidden" name="elapsedMs" value={String(Math.max(0, Date.now() - renderedAt))} />
       </div>
 
-      {/* Services */}
+      {/* Services grouped by category */}
       <div className="mt-5 space-y-6">
         {groups.map(({ category, items }) => (
           <fieldset key={category} className="border-t pt-5">
             <legend className="text-sm font-medium text-neutral-900">{category}</legend>
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
               {items.map((s) => (
-                <label key={s.id} className="flex items-start gap-3 rounded-xl border border-neutral-200 p-3 hover:border-neutral-300 cursor-pointer">
+                <label
+                  key={s.id}
+                  className="flex items-start gap-3 rounded-xl border border-neutral-200 p-3 hover:border-neutral-300 cursor-pointer"
+                >
                   <input
                     type="checkbox"
-                    name="selectedServiceIds"
                     className="mt-1"
-                    value={s.id}
                     checked={selected.includes(s.id)}
                     onChange={() => toggle(s.id)}
+                    aria-label={`Select ${s.title}`}
                   />
                   <div>
                     <div className="font-medium">{s.title}</div>
@@ -147,21 +138,21 @@ export default function PlanForm() {
 
       {/* Contact fields */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-1">
-          <label className="text-sm text-neutral-700">Your name</label>
+        <div>
+          <label className="text-sm text-neutral-700" htmlFor="pf-name">Your name</label>
           <input
-            name="name"
+            id="pf-name"
             className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-2"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
         </div>
-        <div className="sm:col-span-1">
-          <label className="text-sm text-neutral-700">Email</label>
+        <div>
+          <label className="text-sm text-neutral-700" htmlFor="pf-email">Email</label>
           <input
+            id="pf-email"
             type="email"
-            name="email"
             className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-2"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -169,9 +160,9 @@ export default function PlanForm() {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-sm text-neutral-700">Company (optional)</label>
+          <label className="text-sm text-neutral-700" htmlFor="pf-company">Company (optional)</label>
           <input
-            name="company"
+            id="pf-company"
             className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-2"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
@@ -179,9 +170,9 @@ export default function PlanForm() {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-sm text-neutral-700">What’s the situation?</label>
+          <label className="text-sm text-neutral-700" htmlFor="pf-message">What’s the situation?</label>
           <textarea
-            name="message"
+            id="pf-message"
             className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-2"
             rows={4}
             value={message}
@@ -198,11 +189,9 @@ export default function PlanForm() {
           type="submit"
           disabled={submitting || selected.length === 0}
           className="px-5 py-3 rounded-2xl bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50"
-          title={selected.length === 0 ? "Select at least one module" : "Submit"}
         >
           {submitting ? "Sending…" : "Send request"}
         </button>
-
         {CALENDLY && (
           <a
             href={CALENDLY}
@@ -215,22 +204,18 @@ export default function PlanForm() {
         )}
       </div>
 
-      {/* Status */}
+      {/* Status messages */}
       {done === "ok" && (
         <p className="mt-3 text-sm text-emerald-700">
           Thanks! I’ll review and get back to you with a modular proposal.
-          {" "}
           {CALENDLY ? (
             <>
-              Meanwhile, you can {" "}
+              {" "}Meanwhile, you can{" "}
               <a className="underline" href={CALENDLY} target="_blank" rel="noreferrer">
                 book a time
-              </a>
-              .
+              </a>.
             </>
           ) : null}
-          {" "}
-          {/* If email isn’t configured yet, this was logged on the server in dev mode. */}
         </p>
       )}
       {done === "error" && (
@@ -241,3 +226,4 @@ export default function PlanForm() {
     </form>
   );
 }
+
