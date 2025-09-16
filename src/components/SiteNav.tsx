@@ -9,6 +9,7 @@ export default function SiteNav() {
         <a href="#" aria-label="Home"><Logo /></a>
         <div className="flex items-center gap-4 text-sm">
           <a href="#services" className="hover:underline">Services</a>
+          <a href="#results" className="hover:underline">Results</a>
           <a href="#about" className="hover:underline">About</a>
           <a href="#contact" className="hover:underline">Contact</a>
           <ThemeToggle />

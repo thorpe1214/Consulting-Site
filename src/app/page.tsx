@@ -6,6 +6,8 @@ import RenewalRunway from "@/components/RenewalRunway";
 import Proof from "@/components/Proof";
 import { theme } from "@/config/theme";
 import PlanForm from "../../components/PlanForm";
+import Results from "@/components/Results";
+import Testimonials from "@/components/Testimonials";
 
 export default function Page() {
   return (
@@ -19,6 +21,9 @@ export default function Page() {
       </Section>
 
       <Proof />
+
+      <Results />
+      <Testimonials />
 
       <About />
 
