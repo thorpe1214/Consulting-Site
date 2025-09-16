@@ -1,57 +1,46 @@
 // src/components/SnapSection.tsx
-import MeshBG from "@/components/MeshBG";
-import Link from "next/link";
+// Full-screen section with mesh background, headline + blurb, CTAs,
+// and an optional down-arrow that jumps to the next section.
+// Uses ESM imports (no CommonJS require) per Next.js + TypeScript best practices.
+import MeshBG from "@/components/MeshBG"; // background layer (presentational only)
+import { ArrowDown } from "lucide-react"; // icon via ESM; SSR-safe
+import React from "react";
 
-// Optional: lucide-react ArrowDown; fallback inline icon if missing
-let ArrowDown: (props: { size?: number; className?: string }) => JSX.Element = ({ size = 16, className }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-    <path d="M12 4v14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <path d="M6 12l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-try {
-  // dynamic require to avoid type errors if package not installed
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const lucide = require("lucide-react");
-  if (lucide && lucide.ArrowDown) {
-    ArrowDown = lucide.ArrowDown;
-  }
-} catch {}
+// Props kept explicit and typed; nextId is optional and safely handled.
+type Props = {
+  id: string; // HTML id (used by right-side dot nav and anchors)
+  title: string; // section headline
+  blurb: string; // short description
+  nextId?: string; // if present, shows a hash-link arrow to the next section
+};
 
-export default function SnapSection({
-  id,
-  title,
-  blurb,
-  nextId,
-}: {
-  id: string;
-  title: string;
-  blurb: string;
-  nextId?: string;
-}) {
+export default function SnapSection({ id, title, blurb, nextId }: Props) {
   return (
     <section id={id} className="relative snap-start min-h-[100svh]">
+      {/* Decorative mesh background; non-interactive */}
       <MeshBG />
       <div className="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-24 flex flex-col justify-center min-h-[100svh]">
         <div className="max-w-3xl">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">{title}</h2>
           <p className="mt-4 text-lg text-neutral-700 dark:text-neutral-200">{blurb}</p>
           <div className="mt-8 flex gap-3">
-            <Link
+            {/* For in-page anchors, use <a href="#..."> so it works without JS and avoids Next Link warnings. */}
+            <a
               href="#services"
               className="px-5 py-3 rounded-2xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900"
             >
               Explore modules
-            </Link>
-            <Link
+            </a>
+            <a
               href="#contact"
               className="px-5 py-3 rounded-2xl border border-neutral-300 bg-white hover:border-neutral-400 dark:bg-neutral-900 dark:text-neutral-100 dark:border-neutral-700 dark:hover:border-neutral-600"
             >
               Build your plan
-            </Link>
+            </a>
           </div>
         </div>
 
+        {/* Optional down-arrow only when nextId is provided. */}
         {nextId && (
           <a
             href={`#${nextId}`}
@@ -66,4 +55,3 @@ export default function SnapSection({
     </section>
   );
 }
-
