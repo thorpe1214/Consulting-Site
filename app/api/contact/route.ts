@@ -21,7 +21,6 @@ function isStringArray(x: unknown): x is string[] {
 
 async function parseBody(req: Request): Promise<Body | null> {
   const raw: unknown = await req.json();
-
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
 
@@ -31,10 +30,7 @@ async function parseBody(req: Request): Promise<Body | null> {
   const message = isNonEmptyString(obj.message) ? obj.message.trim() : "";
   const selectedServiceIds = isStringArray(obj.selectedServiceIds) ? obj.selectedServiceIds : [];
 
-  if (!name || !email || !message || selectedServiceIds.length === 0) {
-    return null;
-  }
-
+  if (!name || !email || !message || selectedServiceIds.length === 0) return null;
   return { name, email, company, message, selectedServiceIds };
 }
 
@@ -74,4 +70,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
   }
 }
-
