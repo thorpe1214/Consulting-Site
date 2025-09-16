@@ -3,12 +3,13 @@ import Section from "@/components/Section";
 import ServicesGrid from "@/components/ServicesGrid";
 import About from "@/components/About";
 import RenewalRunway from "@/components/RenewalRunway";
+import Proof from "@/components/Proof";
 import { theme } from "@/config/theme";
 import PlanForm from "../../components/PlanForm";
 
 export default function Page() {
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900">
+    <main className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <Hero />
 
       <ServicesGrid />
@@ -17,6 +18,8 @@ export default function Page() {
         <RenewalRunway />
       </Section>
 
+      <Proof />
+
       <About />
 
       <Section id="contact" title="Contact" className="pb-24">
@@ -24,7 +27,7 @@ export default function Page() {
           Pick the modules you want and I’ll send a modular proposal.
         </p>
         <PlanForm />
-        <div className="mt-4 text-sm text-neutral-600">
+        <div className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">
           Or email me directly:{" "}
           <a className="underline" href={`mailto:${theme.contact.email}`}>
             {theme.contact.email}
